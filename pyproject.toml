@@ -8,9 +8,6 @@ dependencies = [
     "ruff>=0.14.1",
 ]
 
-[tool.uv.sources]
-simple_project_setup = {path = "src"}
-
 [tool.ruff]
 line-length = 78
 indent-width = 4
