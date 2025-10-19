@@ -39,7 +39,3 @@ ignore = []
 quote-style = "double"
 docstring-code-format = true
 docstring-code-line-length = 20
-
-[build-system]
-requires = ["uv-build>=0.8.0,<0.9.0"]
-build-backend = "uv_build"
