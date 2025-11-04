@@ -10,6 +10,8 @@
             "source.organizeImports": "explicit"
         }
     },
+    "ty.inlayHints.variableTypes": false,
+    "ty.inlayHints.callArgumentNames": false,
     // General editor settings
     "editor.rulers": [
         90
@@ -26,11 +28,11 @@
     "terminal.integrated.rightClickBehavior": "copyPaste",
     // Minimap settings
     "editor.minimap.enabled": true,
-    "editor.minimap.autohide": "mouseover",
+    "editor.minimap.autohide": "false",
     "editor.minimap.renderCharacters": false,
     "editor.minimap.showSlider": "always",
     "editor.minimap.size": "fit",
-    "editor.minimap.scale": 1,
+    "editor.minimap.scale": 2,
     "editor.minimap.side": "right",
     "editor.fontFamily": "SpaceMono Nerd Font,\"Consolas, 'Courier New', monospace,",
     "editor.wordWrap": "on",
