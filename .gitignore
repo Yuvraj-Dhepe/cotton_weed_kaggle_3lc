@@ -1,7 +1,9 @@
 ### Current 
+kaggle_cotton_weed_detection/
+models/
 data/
 *.pt
-
+temp/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

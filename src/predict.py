@@ -16,17 +16,20 @@ Submission Format:
 Learn more: See cotton_weed_starter_notebook.ipynb for explanations
 """
 
-from pathlib import Path
-import pandas as pd
+import os
 import shutil
+from pathlib import Path
+
+import pandas as pd
+from dotenv import load_dotenv
 from tlc_ultralytics import YOLO
 
 # ============================================================================
 # CONFIGURATION - Edit these values
 # ============================================================================
-
+load_dotenv()
 # Model weights path (from training)
-MODEL_WEIGHTS = "runs/detect/yolov8n_baseline/weights/best.pt"
+MODEL_WEIGHTS = os.getenv("BEST_MODEL_PATH")
 
 # Inference settings
 CONFIDENCE_THRESHOLD = 0  # Confidence threshold for detections
@@ -57,7 +60,7 @@ def main():
         return
 
     # Verify test directory exists
-    test_dir = Path("test/images")
+    test_dir = Path("data/test/images")
     if not test_dir.exists():
         print(f"\n!!! ERROR: Test directory not found: {test_dir}")
         print("   Expected: test/images/")
@@ -132,7 +135,9 @@ def main():
                         class_id = parts[0]
                         conf = parts[5]
                         xc, yc, w, h = parts[1], parts[2], parts[3], parts[4]
-                        prediction_boxes.append(f"{class_id} {conf} {xc} {yc} {w} {h}")
+                        prediction_boxes.append(
+                            f"{class_id} {conf} {xc} {yc} {w} {h}"
+                        )
                         total_boxes += 1
 
             if prediction_boxes:
@@ -155,7 +160,9 @@ def main():
     print("\n Statistics:")
     print(f"   Total images: {len(submission_df)}")
     print(f"   Images with predictions: {images_with_preds}")
-    print(f"   Images without predictions: {len(submission_df) - images_with_preds}")
+    print(
+        f"   Images without predictions: {len(submission_df) - images_with_preds}"
+    )
     print(f"   Total bounding boxes: {total_boxes}")
     print(f"   Avg boxes/image: {total_boxes / len(submission_df):.2f}")
 

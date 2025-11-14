@@ -151,6 +151,7 @@ def main():
         "patience": PATIENCE,
         "settings": settings,
         "val": True,
+        "project": PROJECT_NAME,
     }
 
     # Add augmentation if enabled
