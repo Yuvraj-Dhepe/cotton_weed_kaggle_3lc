@@ -1,5 +1,6 @@
 ### Current 
 kaggle_cotton_weed_detection/
+runs/
 models/
 data/
 *.pt

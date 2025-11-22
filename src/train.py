@@ -19,6 +19,7 @@ Learn more: See cotton_weed_starter_notebook.ipynb for explanations
 
 import os
 
+import click
 import tlc
 import torch
 from dotenv import load_dotenv
@@ -62,7 +63,20 @@ USE_AUGMENTATION = False  # Enable mosaic, mixup, copy_paste
 # ============================================================================
 
 
-def main():
+@click.command()
+@click.option("--augment", is_flag=True, help="Enable data augmentation.")
+@click.option(
+    "--geo-aug",
+    is_flag=True,
+    help="Enable geometric augmentations (mosaic, flip, scale, degrees).",
+)
+@click.option(
+    "--photo-aug",
+    is_flag=True,
+    help="Enable photometric augmentations (HSV).",
+)
+@click.option("--mixup-aug", is_flag=True, help="Enable Mixup augmentation.")
+def main(augment, geo_aug, photo_aug, mixup_aug):
     """Main training pipeline."""
     print("=" * 70)
     print("COTTON WEED DETECTION - TRAINING")
@@ -120,7 +134,14 @@ def main():
     print(f"  Image size: {IMAGE_SIZE}")
     print(f"  Device: {'GPU ' + str(DEVICE) if DEVICE != 'cpu' else 'CPU'}")
     print(f"  Learning rate: {LR0}")
-    print(f"  Augmentation: {'Enabled' if USE_AUGMENTATION else 'Disabled'}")
+
+    if augment:
+        print("  Augmentation: ENABLED")
+        print(f"    - Geometric: {'ON' if geo_aug else 'OFF'}")
+        print(f"    - Photometric: {'ON' if photo_aug else 'OFF'}")
+        print(f"    - Mixup: {'ON' if mixup_aug else 'OFF'}")
+    else:
+        print("  Augmentation: DISABLED (Using YOLO defaults)")
 
     # Create 3LC Settings
     settings = Settings(
@@ -155,7 +176,34 @@ def main():
     }
 
     # Add augmentation if enabled
-    if USE_AUGMENTATION:
+    if augment:
+        if geo_aug:
+            train_args.update(
+                {
+                    "mosaic": 1.0,
+                    "fliplr": 0.5,
+                    "flipud": 0.5,
+                    "degrees": 15.0,
+                    "scale": 0.5,
+                }
+            )
+        if photo_aug:
+            train_args.update(
+                {
+                    "hsv_h": 0.015,
+                    "hsv_s": 0.7,
+                    "hsv_v": 0.4,
+                }
+            )
+        if mixup_aug:
+            train_args.update(
+                {
+                    "mixup": 0.1,
+                }
+            )
+
+    # Legacy support for USE_AUGMENTATION constant if no flags passed
+    elif USE_AUGMENTATION:
         train_args.update(
             {
                 "mosaic": 1.0,  # Mosaic augmentation
