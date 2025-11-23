@@ -72,7 +72,7 @@ except Exception as e:
 # ============================================================================
 
 
-def create_objective(augment, geo_aug, photo_aug, mixup_aug):
+def create_objective(augment, geo_aug, photo_aug, complex_augs):
     def objective(trial):
         """
         Optuna objective function.
@@ -89,14 +89,26 @@ def create_objective(augment, geo_aug, photo_aug, mixup_aug):
         cls = trial.suggest_float("cls", 0.5, 4.0)
         dfl = trial.suggest_float("dfl", 0.5, 3.0)
 
+        # Optimizer & Scheduler
+        optimizer = trial.suggest_categorical(
+            "optimizer", ["auto", "SGD", "AdamW"]
+        )
+        cos_lr = trial.suggest_categorical("cos_lr", [True, False])
+        copy_paste_mode = trial.suggest_categorical(
+            "copy_paste_mode", ["flip", "mixup"]
+        )
+
         # Augmentation Hyperparameters
         aug_params = {}
         if augment:
             if geo_aug:
                 aug_params["degrees"] = trial.suggest_float(
-                    "degrees", 0.0, 45.0
+                    "degrees", -45.0, 45.0
                 )
                 aug_params["scale"] = trial.suggest_float("scale", 0.0, 0.9)
+                aug_params["translate"] = trial.suggest_float(
+                    "translate", -1.0, 1.0
+                )
                 aug_params["mosaic"] = trial.suggest_float("mosaic", 0.0, 1.0)
                 aug_params["fliplr"] = trial.suggest_float("fliplr", 0.0, 1.0)
                 aug_params["flipud"] = trial.suggest_float("flipud", 0.0, 1.0)
@@ -106,8 +118,11 @@ def create_objective(augment, geo_aug, photo_aug, mixup_aug):
                 aug_params["hsv_s"] = trial.suggest_float("hsv_s", 0.0, 0.9)
                 aug_params["hsv_v"] = trial.suggest_float("hsv_v", 0.0, 0.9)
 
-            if mixup_aug:
+            if complex_augs:
                 aug_params["mixup"] = trial.suggest_float("mixup", 0.0, 0.5)
+                aug_params["copy_paste"] = trial.suggest_float(
+                    "copy_paste", 0.0, 1.0
+                )
 
         # Generate unique run name for 3LC tracking
         run_id = str(uuid.uuid4())[:8]
@@ -145,7 +160,12 @@ def create_objective(augment, geo_aug, photo_aug, mixup_aug):
             "box": box,
             "cls": cls,
             "dfl": dfl,
+            "optimizer": optimizer,
+            "cos_lr": cos_lr,
+            "copy_paste_mode": copy_paste_mode,
         }
+
+        # Add augmentation params
 
         # Add augmentation params
         train_args.update(aug_params)
@@ -197,8 +217,12 @@ def create_objective(augment, geo_aug, photo_aug, mixup_aug):
 @click.option(
     "--photo-aug", is_flag=True, help="Tune photometric augmentations (HSV)."
 )
-@click.option("--mixup-aug", is_flag=True, help="Tune Mixup augmentation.")
-def main(augment, geo_aug, photo_aug, mixup_aug):
+@click.option(
+    "--complex-augs",
+    is_flag=True,
+    help="Tune Mixup and Copy-Paste augmentations.",
+)
+def main(augment, geo_aug, photo_aug, complex_augs):
     print("=" * 70)
     print(
         "COTTON WEED DETECTION - HYPERPARAMETER OPTIMIZATION (OPTUNA + 3LC)"
@@ -209,7 +233,9 @@ def main(augment, geo_aug, photo_aug, mixup_aug):
         print("Augmentation Tuning: ENABLED")
         print(f"  - Geometric: {'ON' if geo_aug else 'OFF'}")
         print(f"  - Photometric: {'ON' if photo_aug else 'OFF'}")
-        print(f"  - Mixup: {'ON' if mixup_aug else 'OFF'}")
+        print(
+            f"  - Complex (Mixup/CopyPaste): {'ON' if complex_augs else 'OFF'}"
+        )
     else:
         print("Augmentation Tuning: DISABLED (Using YOLO defaults)")
 
@@ -232,7 +258,7 @@ def main(augment, geo_aug, photo_aug, mixup_aug):
     print(f"Starting optimization with {NUM_TRIALS} trials...")
 
     # Create objective with captured arguments
-    objective = create_objective(augment, geo_aug, photo_aug, mixup_aug)
+    objective = create_objective(augment, geo_aug, photo_aug, complex_augs)
 
     study.optimize(objective, n_trials=NUM_TRIALS)
 

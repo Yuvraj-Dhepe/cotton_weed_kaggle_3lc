@@ -1,4 +1,5 @@
 ### Setup 
+uv pip install git+https://github.com/3lc-ai/3lc-examples
 
 ### Environment Setup
 uv init
