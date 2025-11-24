@@ -19,7 +19,7 @@ MLFLOW_PORT=5000
 mkdir -p temp
 if [ ! -f "temp/optuna.db" ]; then
     echo "Initializing Optuna database..."
-    uv run optuna create-study --storage sqlite:///temp/optuna.db --study-name cotton_weed_optimization
+    uv run optuna create-study --storage sqlite:///temp/optuna.db --study-name cotton_weed_optimization --direction maximize
 fi
 
 # 1. Start Optuna Dashboard

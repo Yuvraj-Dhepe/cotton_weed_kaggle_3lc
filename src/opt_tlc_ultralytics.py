@@ -35,11 +35,11 @@ VAL_TABLE_URL = os.getenv("VAL_TABLE_URL")
 
 PROJECT_NAME = os.getenv("PROJECT_NAME")
 EXPERIMENT_PREFIX = "optuna_tlc"
-EPOCHS = 30  # Reduced epochs for optimization speed
+EPOCHS = 60  # Reduced epochs for optimization speed
 IMAGE_SIZE = 640
 DEVICE = 0
 WORKERS = 4
-NUM_TRIALS = 100  # Number of trials
+NUM_TRIALS = 150  # Number of trials
 
 # ============================================================================
 # SETUP
@@ -90,10 +90,6 @@ def create_objective(augment, geo_aug, photo_aug, complex_augs):
         dfl = trial.suggest_float("dfl", 0.5, 3.0)
 
         # Optimizer & Scheduler
-        optimizer = trial.suggest_categorical(
-            "optimizer", ["auto", "SGD", "AdamW"]
-        )
-        cos_lr = trial.suggest_categorical("cos_lr", [True, False])
         copy_paste_mode = trial.suggest_categorical(
             "copy_paste_mode", ["flip", "mixup"]
         )
@@ -139,6 +135,21 @@ def create_objective(augment, geo_aug, photo_aug, complex_augs):
         # Initialize model
         model = YOLO("yolov8n.pt")
 
+        # Define pruning callback
+        def on_fit_epoch_end(trainer):
+            # Get mAP50 from trainer metrics
+            # Ultralytics stores metrics in trainer.metrics
+            # Keys are usually 'metrics/mAP50(B)'
+            metrics = trainer.metrics
+            if metrics and "metrics/mAP50(B)" in metrics:
+                current_map50 = metrics["metrics/mAP50(B)"]
+                trial.report(current_map50, trainer.epoch)
+                if trial.should_prune():
+                    raise optuna.TrialPruned()
+
+        model.add_callback("on_fit_epoch_end", on_fit_epoch_end)
+
+        print(f"Table URLS: {TABLES}")
         # Training arguments
         train_args = {
             "tables": TABLES,
@@ -160,8 +171,7 @@ def create_objective(augment, geo_aug, photo_aug, complex_augs):
             "box": box,
             "cls": cls,
             "dfl": dfl,
-            "optimizer": optimizer,
-            "cos_lr": cos_lr,
+            "cos_lr": True,
             "copy_paste_mode": copy_paste_mode,
         }
 
@@ -178,6 +188,8 @@ def create_objective(augment, geo_aug, photo_aug, complex_augs):
         try:
             results = model.train(**train_args)
             map50 = results.box.map50
+        except optuna.TrialPruned:
+            raise
         except Exception as e:
             print(f"Trial failed with error: {e}")
             map50 = 0.0
@@ -253,6 +265,9 @@ def main(augment, geo_aug, photo_aug, complex_augs):
         storage=storage_url,
         direction="maximize",
         load_if_exists=True,
+        pruner=optuna.pruners.MedianPruner(
+            n_startup_trials=5, n_warmup_steps=5
+        ),
     )
 
     print(f"Starting optimization with {NUM_TRIALS} trials...")

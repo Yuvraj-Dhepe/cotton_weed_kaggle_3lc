@@ -45,19 +45,39 @@ RUN_NAME = "yolov8n_baseline"  # Change for each experiment (e.g., "v2_with_augm
 RUN_DESCRIPTION = "Baseline YOLOv8n training run"  # Describe this experiment
 
 # Training hyperparameters
-EPOCHS = 50  # Number of training epochs
+EPOCHS = 100  # Number of training epochs
 BATCH_SIZE = 16  # Batch size (reduce if GPU memory issues)
 IMAGE_SIZE = 640  # Input image size (FIXED by competition)
 DEVICE = 0  # GPU device (0 for first GPU, 'cpu' for CPU)
 WORKERS = 4  # Number of dataloader workers
 
 # Advanced hyperparameters (optional)
-LR0 = 0.01  # Initial learning rate
+LR0 = 0.003
+LRF = 0.4
+Momentum = 0.9
+WEIGHT_DECAY = 0.0004
+BOX = 3.50
+CLS = 2.62
+DFL = 0.7
+
+
+# Augmentation parameters
+HSV_H = 0.05
+HSV_S = 0.23
+HSV_V = 0.43
+DEGREES = 0.45  # 1.05
+TRANSLATE = 0.45
+SCALE = 0.3
+FlipUD = 1.0
+FlipLR = 1.0
+MOSAIC = 0.6
+MIXUP = 0.30
+CUTMIX = 0.30
 PATIENCE = 20  # Early stopping patience (epochs without improvement)
+COPY_PASTE = 0.5
+COPY_PASTE_MODE = "mixup"
 
 # Data augmentation (set to True to enable advanced augmentation)
-USE_AUGMENTATION = False  # Enable mosaic, mixup, copy_paste
-
 # ============================================================================
 # TRAINING PIPELINE - No need to edit below this line
 # ============================================================================
@@ -148,6 +168,8 @@ def main(augment, geo_aug, photo_aug, mixup_aug):
         project_name=PROJECT_NAME,
         run_name=RUN_NAME,
         run_description=RUN_DESCRIPTION,
+        image_embeddings_dim=3,
+        collection_epoch_interval=5,
     )
 
     # Load model
@@ -169,10 +191,16 @@ def main(augment, geo_aug, photo_aug, mixup_aug):
         "device": DEVICE,
         "workers": WORKERS,
         "lr0": LR0,
+        # "lrf": LRF,
+        # "momentum": Momentum,
+        # "weight_decay": WEIGHT_DECAY,
+        # "box": BOX,
+        # "cls": CLS,
         "patience": PATIENCE,
         "settings": settings,
         "val": True,
         "project": PROJECT_NAME,
+        "cos_lr": True,
     }
 
     # Add augmentation if enabled
@@ -180,38 +208,33 @@ def main(augment, geo_aug, photo_aug, mixup_aug):
         if geo_aug:
             train_args.update(
                 {
-                    "mosaic": 1.0,
-                    "fliplr": 0.5,
-                    "flipud": 0.5,
-                    "degrees": 15.0,
-                    "scale": 0.5,
+                    # "mosaic": MOSAIC,
+                    "fliplr": FlipLR,
+                    "flipud": FlipUD,
+                    "translate": TRANSLATE,
+                    "degrees": DEGREES,
+                    "scale": SCALE,
                 }
             )
         if photo_aug:
+            # We don't want to use this will change the features of the weeds
             train_args.update(
                 {
-                    "hsv_h": 0.015,
-                    "hsv_s": 0.7,
-                    "hsv_v": 0.4,
+                    "hsv_h": HSV_H,
+                    "hsv_s": HSV_S,
+                    "hsv_v": HSV_V,
                 }
             )
         if mixup_aug:
             train_args.update(
                 {
-                    "mixup": 0.1,
+                    # "mixup": MIXUP,
+                    "mosaic": MOSAIC,
+                    "copy_paste": COPY_PASTE,
+                    "copy_paste_mode": COPY_PASTE_MODE,
+                    "cutmix": CUTMIX,
                 }
             )
-
-    # Legacy support for USE_AUGMENTATION constant if no flags passed
-    elif USE_AUGMENTATION:
-        train_args.update(
-            {
-                "mosaic": 1.0,  # Mosaic augmentation
-                "mixup": 0.05,  # Mixup augmentation
-                "copy_paste": 0.1,  # Copy-paste augmentation
-            }
-        )
-
     model.train(**train_args)
 
     # Done!
