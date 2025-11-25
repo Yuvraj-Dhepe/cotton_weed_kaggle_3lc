@@ -52,30 +52,9 @@ DEVICE = 0  # GPU device (0 for first GPU, 'cpu' for CPU)
 WORKERS = 4  # Number of dataloader workers
 
 # Advanced hyperparameters (optional)
-LR0 = 0.003
-LRF = 0.4
-Momentum = 0.9
-WEIGHT_DECAY = 0.0004
-BOX = 3.50
-CLS = 2.62
-DFL = 0.7
-
-
-# Augmentation parameters
-HSV_H = 0.05
-HSV_S = 0.23
-HSV_V = 0.43
-DEGREES = 0.45  # 1.05
-TRANSLATE = 0.45
-SCALE = 0.3
-FlipUD = 1.0
-FlipLR = 1.0
-MOSAIC = 0.6
-MIXUP = 0.30
-CUTMIX = 0.30
-PATIENCE = 20  # Early stopping patience (epochs without improvement)
-COPY_PASTE = 0.5
-COPY_PASTE_MODE = "mixup"
+Momentum = 0.98
+WEIGHT_DECAY = 0.0001
+PATIENCE = 30  # Early stopping patience (epochs without improvement)
 
 # Data augmentation (set to True to enable advanced augmentation)
 # ============================================================================
@@ -153,7 +132,6 @@ def main(augment, geo_aug, photo_aug, mixup_aug):
     print(f"  Batch size: {BATCH_SIZE}")
     print(f"  Image size: {IMAGE_SIZE}")
     print(f"  Device: {'GPU ' + str(DEVICE) if DEVICE != 'cpu' else 'CPU'}")
-    print(f"  Learning rate: {LR0}")
 
     if augment:
         print("  Augmentation: ENABLED")
@@ -190,51 +168,47 @@ def main(augment, geo_aug, photo_aug, mixup_aug):
         "batch": BATCH_SIZE,
         "device": DEVICE,
         "workers": WORKERS,
-        "lr0": LR0,
-        # "lrf": LRF,
-        # "momentum": Momentum,
-        # "weight_decay": WEIGHT_DECAY,
-        # "box": BOX,
-        # "cls": CLS,
         "patience": PATIENCE,
         "settings": settings,
         "val": True,
         "project": PROJECT_NAME,
         "cos_lr": True,
+        "momentum": Momentum,
+        "weight_decay": WEIGHT_DECAY,
     }
 
-    # Add augmentation if enabled
-    if augment:
-        if geo_aug:
-            train_args.update(
-                {
-                    # "mosaic": MOSAIC,
-                    "fliplr": FlipLR,
-                    "flipud": FlipUD,
-                    "translate": TRANSLATE,
-                    "degrees": DEGREES,
-                    "scale": SCALE,
-                }
-            )
-        if photo_aug:
-            # We don't want to use this will change the features of the weeds
-            train_args.update(
-                {
-                    "hsv_h": HSV_H,
-                    "hsv_s": HSV_S,
-                    "hsv_v": HSV_V,
-                }
-            )
-        if mixup_aug:
-            train_args.update(
-                {
-                    # "mixup": MIXUP,
-                    "mosaic": MOSAIC,
-                    "copy_paste": COPY_PASTE,
-                    "copy_paste_mode": COPY_PASTE_MODE,
-                    "cutmix": CUTMIX,
-                }
-            )
+    # # Add augmentation if enabled
+    # if augment:
+    #     if geo_aug:
+    #         train_args.update(
+    #             {
+    #                 # "mosaic": MOSAIC,
+    #                 "fliplr": FlipLR,
+    #                 "flipud": FlipUD,
+    #                 "translate": TRANSLATE,
+    #                 "degrees": DEGREES,
+    #                 "scale": SCALE,
+    #             }
+    #         )
+    #     if photo_aug:
+    #         # We don't want to use this will change the features of the weeds
+    #         train_args.update(
+    #             {
+    #                 "hsv_h": HSV_H,
+    #                 "hsv_s": HSV_S,
+    #                 "hsv_v": HSV_V,
+    #             }
+    #         )
+    #     if mixup_aug:
+    #         train_args.update(
+    #             {
+    #                 # "mixup": MIXUP,
+    #                 "mosaic": MOSAIC,
+    #                 "copy_paste": COPY_PASTE,
+    #                 "copy_paste_mode": COPY_PASTE_MODE,
+    #                 "cutmix": CUTMIX,
+    #             }
+    #         )
     model.train(**train_args)
 
     # Done!
